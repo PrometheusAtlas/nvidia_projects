@@ -1,14 +1,15 @@
-# CUDA Matrix Multiplication: Naive vs Tiled
+# CUDA Matrix Multiplication: Naive vs Tiled.
 
 GPU Programming: Tiling - Demonstrating how CUDA naive kernel vs Tiling approach differs in computational overhead
-for matrix multiplication, by reducing the global memory workload. Typically, the naive model calls the first row
-row of matrix A and the first colunm of matrix B, and loads them into rgiesters, This produces a sinlge output
+for matrix multiplication, by reducing global memory workload. Typically, the naive model calls the first
+row of matrix A and the first colunm of matrix B, loads them into the register, and produces a sinlge output
 for matrix C at the relevant co-ordinate i.e. C(0, 0). When repeating this process for C(0, 1), the naive kernel
-reads the entire set of matrix A+1 and B+1 again, loads them into the registers, and output the sinlge Ci value -
-this read/write process repeats for the entirety of C with the number of access being = to the length of the side of the matrix.
-By utililizing shared memory, the Tiling apprach removes this overhead by segmenting the exisintg A & B matrices
-into blocks (a mini matrix of matrix), loading a portion of those matrices into shared memeory and procedding to draw on the cordinate
-from shared memeory for the out of C. While time compleixty of both approaches remain O(n^3), Tiling reduces global memory complexity
+reads the entire set of matrix A+1 and B+1 again, loads them into the register, and output the sinlge Ci value -
+this read/write process repeats for the entirety of C across both A & B, with the number of read/write accesses being equal to the length of the side of the matrix.
+
+When utililizing shared memory, the Tiling implementation removes this overhead by segmenting the exisintg A & B matrices
+into blocks, loading a portion of those matrices into shared memeory and procedding to draw on the cordinate
+from shared memeory for the output of C. While time complexity of both approaches remain O(n^3), Tiling reduces global memory complexity
 from O(n^3) to O(n^3/tile_size).
 
 ## What This Project Does
@@ -23,6 +24,18 @@ The executable reports:
 - average kernel time for both kernels
 - throughput in GFLOP/s
 - speedup ratio (`naive / tiled`)
+
+## Results
+
+Across increasing matrix sizes (128 → 2048), the tiled kernel consistently outperforms the naive implementation once the workload becomes memory-bound. For small matrices the difference is negligible and can even slightly favor the naive version due to shared memory overhead, but from 256 onward the tiled approach stabilizes at roughly 1.3x speedup. Kernel time scales as expected with O(n^3) growth for both methods. However, the tiled kernel maintains higher sustained throughput, reaching ~1200+ GFLOP/s compared to ~950 GFLOP/s for the naive version at larger sizes. 
+
+<img width="2400" height="720" alt="cuda_matmul_plot" src="https://github.com/user-attachments/assets/9114cc47-9cb3-470c-a635-3c7fc9d3f4ba" />
+
+The performance gap reflects reduced global memory pressure and improved data reuse inside shared memory.
+
+## Future work
+
+Next week I will extend the tiling comparison beyond matmul by applying the same approach to grid-based numerical computation. The objective is to evaluate whether shared memory produces measurable improvement if there is overlap between neighboring grid threads accessing the same data.
 
 ## Build And Run
 
